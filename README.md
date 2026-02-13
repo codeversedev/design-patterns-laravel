@@ -1,59 +1,173 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Design Patterns in Laravel
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A collection of common **design patterns** implemented in PHP using a Laravel application. Each pattern lives under `app/Services/` in its own directory with clean, self-contained examples.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Patterns
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1. Strategy Pattern
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**Location:** `app/Services/Strategy/`
 
-## Learning Laravel
+Defines a family of interchangeable algorithms and lets the client switch between them at runtime.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| File | Purpose |
+|------|---------|
+| `PaymentMethodInterface.php` | Strategy interface — `pay()` and `getName()` |
+| `CreditCardPayment.php` | Pays via credit card with masked card output |
+| `PaypalPayment.php` | Pays via PayPal using an email address |
+| `AfterPayPayment.php` | Pays via AfterPay with configurable instalments |
+| `PaymentContext.php` | Context that delegates to the selected strategy |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```php
+$context = new PaymentContext();
+$context->setPaymentMethod(new CreditCardPayment('4111111111111111', '12/28', '123'));
+echo $context->checkout(99.95);
+```
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Factory Pattern
 
-### Premium Partners
+**Location:** `app/Services/Factory/`
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Encapsulates object creation logic so the client doesn't need to know the concrete class.
 
-## Contributing
+| File | Purpose |
+|------|---------|
+| `NotificationInterface.php` | Product interface — `send()` and `getChannel()` |
+| `EmailNotification.php` | Sends notifications via email |
+| `SmsNotification.php` | Sends notifications via SMS |
+| `PushNotification.php` | Sends push notifications |
+| `NotificationFactory.php` | Factory that creates the correct notification by channel name |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```php
+$notification = NotificationFactory::create('email');
+echo $notification->send('user@example.com', 'Welcome!');
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Facade Pattern
 
-## Security Vulnerabilities
+**Location:** `app/Services/Facade/`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Provides a simplified interface to a complex subsystem of classes.
+
+| File | Purpose |
+|------|---------|
+| `FileDownloader.php` | Subsystem — downloads a file from a URL |
+| `ConvertService.php` | Subsystem — converts a file to a target format |
+| `FileSaver.php` | Subsystem — saves a file to a destination |
+| `FileConverterFacade.php` | Facade — orchestrates download, convert, and save in one static call |
+
+```php
+$result = FileConverterFacade::convertFromUrl(
+    'https://example.com/report.csv', 'pdf', '/storage/reports'
+);
+```
+
+---
+
+### 4. Iterator Pattern
+
+**Location:** `app/Services/Iterator/`
+
+Provides a way to sequentially access elements of a collection without exposing its underlying structure.
+
+| File | Purpose |
+|------|---------|
+| `File.php` | Element class with name, content, and size |
+| `FileIterator.php` | Implements PHP's `\Iterator` to traverse files |
+| `FileCollection.php` | Implements `\IteratorAggregate` — add, remove, and iterate files |
+
+```php
+$collection = new FileCollection();
+$collection->addFile(new File('readme.md', '# Hello', 512))
+           ->addFile(new File('config.json', '{}', 128));
+
+foreach ($collection as $file) {
+    echo $file->getName();
+}
+```
+
+---
+
+### 5. Observer Pattern
+
+**Location:** `app/Services/Observer/`
+
+Defines a one-to-many dependency so that when an event occurs, all subscribed observers are notified automatically.
+
+| File | Purpose |
+|------|---------|
+| `ObserverInterface.php` | Observer contract — `handle()` |
+| `EmailObserver.php` | Sends an email on event |
+| `LogObserver.php` | Logs the event and payload |
+| `SlackObserver.php` | Posts to a Slack channel on event |
+| `EventNotification.php` | Subject — manages subscriptions and dispatches events |
+
+```php
+$dispatcher = new EventNotification();
+$dispatcher->subscribe('user.registered', new EmailObserver())
+           ->subscribe('user.registered', new LogObserver());
+
+$results = $dispatcher->notify('user.registered', ['email' => 'john@example.com']);
+```
+
+---
+
+### 6. Singleton Pattern
+
+**Location:** `app/Services/Singleton/`
+
+Ensures a class has only one instance and provides a global point of access to it.
+
+| File | Purpose |
+|------|---------|
+| `AppConfig.php` | Singleton with private constructor, `getInstance()`, and key-value settings |
+
+```php
+$config = AppConfig::getInstance();
+$config->set('app.name', 'My App');
+
+// Anywhere else — same instance
+$same = AppConfig::getInstance();
+echo $same->get('app.name'); // "My App"
+```
+
+---
+
+## Project Structure
+
+```
+app/Services/
+├── Facade/
+├── Factory/
+├── Iterator/
+├── Observer/
+├── Singleton/
+└── Strategy/
+```
+
+## Requirements
+
+- PHP 8.2+
+- Composer
+- Laravel 12.x
+
+## Getting Started
+
+```bash
+git clone <repo-url>
+cd design-patterns-laravel
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
